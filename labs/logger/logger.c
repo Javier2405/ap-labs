@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdarg.h>
+#include <signal.h>
 
 //FONT
 #define NEGRO 30
@@ -19,6 +20,7 @@ int infof(const char *format, ...){
     vprintf(format, args);
     va_end(args);
     printf("%c[0;%d;%dm",0x1B, NEGRO, NEGRO_BACK);
+    return 0;
 }
 
 int warnf(const char *format, ...) {
@@ -28,6 +30,7 @@ int warnf(const char *format, ...) {
     vprintf(format, args);
     va_end(args);
     printf("%c[0;%d;%dm",0x1B, NEGRO, NEGRO_BACK);
+    return 0;
 }
 
 int errorf(const char *format, ...) {
@@ -37,6 +40,7 @@ int errorf(const char *format, ...) {
     vprintf(format, args);
     va_end(args);
     printf("%c[0;%d;%dm",0x1B, NEGRO, NEGRO_BACK);
+    return 0;
 }
 
 int panicf(const char *format, ...) {
@@ -46,4 +50,6 @@ int panicf(const char *format, ...) {
     vprintf(format, args);
     va_end(args);
     printf("%c[0;%d;%dm",0x1B, NEGRO, NEGRO_BACK);
+    raise(SIGABRT);
+    return 0;
 }
