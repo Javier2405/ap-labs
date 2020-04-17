@@ -30,3 +30,16 @@ How to submit your work
 GITHUB_USER=<your_github_user>  make submit
 ```
 More details at: [Classify API](../../classify.md)
+
+USE INSTRUCTIONS by Javier2405
+==============================
+
+(Static linking)
+1. gcc -c testLogger.c -o testLogger
+2. gcc -c logger.c -o logger
+3. gcc testLogger logger -o test
+4. ./test
+
+- The default logging is stdout 
+
+
