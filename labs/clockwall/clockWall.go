@@ -6,6 +6,7 @@ import (
 	"net"
 	"os"
 	"strings"
+	"time"
 )
 
 func handleConn2(conn net.Conn, place string) {
@@ -16,8 +17,9 @@ func handleConn2(conn net.Conn, place string) {
 			conn.Close()
 			log.Print(err)
 		} else {
-			fmt.Printf("%s: %s", place, hour)
+			fmt.Printf("%s : %s", place, hour)
 		}
+		time.Sleep(1 * time.Second)
 	}
 }
 

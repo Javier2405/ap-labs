@@ -20,7 +20,7 @@ func handleConn(c net.Conn, tz string) {
 			break
 		}
 
-		_, err := io.WriteString(c, tz+" "+time.Now().Format("15:04:05\n"))
+		_, err := io.WriteString(c, time.Now().Format("15:04:05\n"))
 		if err != nil {
 			log.Print(err)
 			return // e.g., client disconnected
