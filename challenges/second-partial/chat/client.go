@@ -7,6 +7,7 @@
 package main
 
 import (
+	"fmt"
 	"io"
 	"log"
 	"net"
@@ -15,13 +16,22 @@ import (
 
 //!+
 func main() {
-	conn, err := net.Dial("tcp", "localhost:8000")
+	if len(os.Args[1:]) < 4 {
+		fmt.Println("Wrong usage. See readme.")
+		os.Exit(1)
+	}
+	user := os.Args[2]
+	server := os.Args[4]
+
+	conn, err := net.Dial("tcp", server)
 	if err != nil {
 		log.Fatal(err)
 	}
+	fmt.Fprintf(conn, user)
 	done := make(chan struct{})
 	go func() {
-		io.Copy(os.Stdout, conn) // NOTE: ignoring errors
+		io.Copy(os.Stdout, conn)
+		// NOTE: ignoring errors
 		log.Println("done")
 		done <- struct{}{} // signal the main goroutine
 	}()
