@@ -26,7 +26,8 @@ static const unsigned char d[] = {
     66,66,66,66,66,66
 };
 
-long total = 0, prog = 0;
+long total = 0;
+long current = 0;
 
 //FUNCTION FROM https://en.wikibooks.org/wiki/Algorithm_Implementation/Miscellaneous/Base64
 int base64encode(const void* data_buf, size_t dataLength, char* result, size_t resultSize)
@@ -38,72 +39,58 @@ int base64encode(const void* data_buf, size_t dataLength, char* result, size_t r
    uint32_t n = 0;
    int padCount = dataLength % 3;
    uint8_t n0, n1, n2, n3;
-   prog = 0;
-   total = dataLength;
 
-   /* increment over the length of the string, three characters at a time */
+   total = dataLength;
+   current = dataLength;
+
    for (x = 0; x < dataLength; x += 3) 
    {
-       prog = x;
-      /* these three 8-bit (ASCII) characters become one 24-bit number */
-      n = ((uint32_t)data[x]) << 16; //parenthesis needed, compiler depending on flags can do the shifting before conversion to uint32_t, resulting to 0
       
+      n = ((uint32_t)data[x]) << 16;
+
       if((x+1) < dataLength)
-         n += ((uint32_t)data[x+1]) << 8;//parenthesis needed, compiler depending on flags can do the shifting before conversion to uint32_t, resulting to 0
+         n += ((uint32_t)data[x+1]) << 8;
       
       if((x+2) < dataLength)
          n += data[x+2];
 
-      /* this 24-bit number gets separated into four 6-bit numbers */
       n0 = (uint8_t)(n >> 18) & 63;
       n1 = (uint8_t)(n >> 12) & 63;
       n2 = (uint8_t)(n >> 6) & 63;
-      /*
-       * if we have one byte available, then its encoding is spread
-       * out over two characters
-       */
-      if(resultIndex >= resultSize) return 1;   /* indicate failure: buffer too small */
+      n3 = (uint8_t)n & 63;
+            
+      if(resultIndex >= resultSize) return 1;
       result[resultIndex++] = base64chars[n0];
-      if(resultIndex >= resultSize) return 1;   /* indicate failure: buffer too small */
+      if(resultIndex >= resultSize) return 1;
       result[resultIndex++] = base64chars[n1];
 
-      /*
-       * if we have only two bytes available, then their encoding is
-       * spread out over three chars
-       */
       if((x+1) < dataLength)
       {
-         if(resultIndex >= resultSize) return 1;   /* indicate failure: buffer too small */
+         if(resultIndex >= resultSize) return 1;
          result[resultIndex++] = base64chars[n2];
       }
 
-      /*
-       * if we have all three bytes available, then their encoding is spread
-       * out over four characters
-       */
       if((x+2) < dataLength)
       {
-         if(resultIndex >= resultSize) return 1;   /* indicate failure: buffer too small */
+         if(resultIndex >= resultSize) return 1;
          result[resultIndex++] = base64chars[n3];
       }
-      msleep(1);
+
+        current-=3;
+        msleep(1);
    }
 
-   /*
-    * create and add padding that is required if we did not have a multiple of 3
-    * number of characters available
-    */
    if (padCount > 0) 
    { 
       for (; padCount < 3; padCount++) 
       { 
-         if(resultIndex >= resultSize) return 1;   /* indicate failure: buffer too small */
+         if(resultIndex >= resultSize) return 1;
          result[resultIndex++] = '=';
       } 
    }
-   if(resultIndex >= resultSize) return 1;   /* indicate failure: buffer too small */
+   if(resultIndex >= resultSize) return 1;
    result[resultIndex] = 0;
-   return 0;   /* indicate success */
+   return 0;
 }
 
 // FUNCTION FROM https://en.wikibooks.org/wiki/Algorithm_Implementation/Miscellaneous/Base64
@@ -112,25 +99,27 @@ int base64decode (char *in, size_t inLen, unsigned char *out, size_t *outLen) {
     char iter = 0;
     uint32_t buf = 0;
     size_t len = 0;
-    prog = 0;
-    total = inLen;
     
+    total = (long)end - (long)in;
+
     while (in < end) {
-        unsigned char c = d[*in++];
-        prog++;
+
+        current = (long)end - (long)in;
         msleep(1);
+
+        unsigned char c = d[*in++];
+        
         switch (c) {
-        case WHITESPACE: continue;   /* skip whitespace */
-        case INVALID:    return 1;   /* invalid input, return error */
-        case EQUALS:                 /* pad character, end of data */
+        case WHITESPACE: continue;
+        case INVALID:    return 1;
+        case EQUALS:
             in = end;
             continue;
         default:
             buf = buf << 6 | c;
-            iter++; // increment the number of iteration
-            /* If the buffer is full, split it into bytes */
+            iter++;
             if (iter == 4) {
-                if ((len += 3) > *outLen) return 1; /* buffer overflow */
+                if ((len += 3) > *outLen) return 1;
                 *(out++) = (buf >> 16) & 255;
                 *(out++) = (buf >> 8) & 255;
                 *(out++) = buf & 255;
@@ -138,19 +127,20 @@ int base64decode (char *in, size_t inLen, unsigned char *out, size_t *outLen) {
 
             }   
         }
+
     }
    
     if (iter == 3) {
-        if ((len += 2) > *outLen) return 1; /* buffer overflow */
+        if ((len += 2) > *outLen) return 1;
         *(out++) = (buf >> 10) & 255;
         *(out++) = (buf >> 2) & 255;
     }
     else if (iter == 2) {
-        if (++len > *outLen) return 1; /* buffer overflow */
+        if (++len > *outLen) return 1;
         *(out++) = (buf >> 4) & 255;
     }
 
-    *outLen = len; /* modify to reflect the actual output size */
+    *outLen = len;
     return 0;
 }
 
@@ -234,7 +224,7 @@ int msleep(long msec)
 
 void signalHandler(int signal) {
     if (signal == SIGUSR1 || signal == SIGINT) {
-        infof("PROGRESS: %ld, TOTAL: %ld,  %%: %ld%%\n", prog, total, prog*100/total);
+        infof("Progress: %d%%, Remaining: %ld\n", (int)(100.0-(((current*1.0)/(total*1.0))*100.0)), current);
     }
 }
 
