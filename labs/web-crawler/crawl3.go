@@ -21,31 +21,41 @@ import (
 	"gopl.io/ch5/links"
 )
 
+type webPage struct {
+	url   string
+	depth int
+}
+
 //!+sema
 // tokens is a counting semaphore used to
 // enforce a limit of 20 concurrent requests.
 var tokens = make(chan struct{}, 20)
 
-func crawl(url string) []string {
-	fmt.Println(url)
-	tokens <- struct{}{} // acquire a token
-	list, err := links.Extract(url)
-	<-tokens // release the token
-
-	if err != nil {
-		log.Print(err)
+func crawl(link webPage, last bool) []webPage {
+	aux := make([]webPage, 0)
+	fmt.Println(link.url)
+	if !last {
+		tokens <- struct{}{} // acquire a token
+		list, err := links.Extract(link.url)
+		if err != nil {
+			log.Print(err)
+		}
+		<-tokens // release the token
+		for _, n := range list {
+			aux = append(aux, webPage{url: n, depth: link.depth + 1})
+		}
 	}
-	return list
+	return aux
 }
 
 //!-sema
 
 //!+
 func main() {
-	worklist := make(chan []string)
+	worklist := make(chan []webPage)
 	var n int // number of pending sends to worklist
 
-	if len(os.Args[1:]) != 2 {
+	if len(os.Args[1:]) < 2 {
 		fmt.Println("Wrong usage. See readme.")
 		os.Exit(1)
 	}
@@ -56,28 +66,37 @@ func main() {
 	if err != nil {
 		log.Print(err)
 	}
-
-	depth := 0
 	// Start with the command-line arguments.
 	n++
-	go func() { worklist <- os.Args[2:] }()
+	go func() {
+		urls := os.Args[1:]
+		aux := make([]webPage, 0)
+		for _, url := range urls {
+			aux = append(aux, webPage{url: url, depth: 0})
+		}
+		worklist <- aux
+	}()
 
 	// Crawl the web concurrently.
 	seen := make(map[string]bool)
 	for ; n > 0; n-- {
 		list := <-worklist
 		for _, link := range list {
-			if !seen[link] {
-				seen[link] = true
-				if depth <= desire_depth {
+			if !seen[link.url] {
+				seen[link.url] = true
+				if link.depth < desire_depth {
 					n++
-					go func(link string) {
-						worklist <- crawl(link)
+					go func(link webPage) {
+						worklist <- crawl(link, false)
+					}(link)
+				} else if link.depth == desire_depth {
+					n++
+					go func(link webPage) {
+						worklist <- crawl(link, true)
 					}(link)
 				}
 			}
 		}
-		depth++
 	}
 }
 
