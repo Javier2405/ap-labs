@@ -16,6 +16,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
 
 	"gopl.io/ch5/links"
 )
@@ -44,9 +45,22 @@ func main() {
 	worklist := make(chan []string)
 	var n int // number of pending sends to worklist
 
+	if len(os.Args[1:]) != 2 {
+		fmt.Println("Wrong usage. See readme.")
+		os.Exit(1)
+	}
+
+	runes := []rune(os.Args[1])
+	aux := string(runes[7:])
+	desire_depth, err := strconv.Atoi(aux)
+	if err != nil {
+		log.Print(err)
+	}
+
+	depth := 0
 	// Start with the command-line arguments.
 	n++
-	go func() { worklist <- os.Args[1:] }()
+	go func() { worklist <- os.Args[2:] }()
 
 	// Crawl the web concurrently.
 	seen := make(map[string]bool)
@@ -55,12 +69,15 @@ func main() {
 		for _, link := range list {
 			if !seen[link] {
 				seen[link] = true
-				n++
-				go func(link string) {
-					worklist <- crawl(link)
-				}(link)
+				if depth <= desire_depth {
+					n++
+					go func(link string) {
+						worklist <- crawl(link)
+					}(link)
+				}
 			}
 		}
+		depth++
 	}
 }
 
