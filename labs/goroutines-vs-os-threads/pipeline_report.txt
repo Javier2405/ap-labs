@@ -1,0 +1,5 @@
+Memory usage before the pipeline:1 MiB 
+Memory usage after the pipeline: 11 MiB 
+ 
+Time: 433.341242ms 
+Total of pipelines: 500000

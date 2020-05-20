@@ -1,0 +1,2 @@
+Total messages sent: 42724144
+Average meessage per second: 14241381
